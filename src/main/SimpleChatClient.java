@@ -6,12 +6,18 @@ import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.ObjectOutputStream;
 import java.io.PrintWriter;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -31,6 +37,10 @@ public class SimpleChatClient {
     Socket socket;
     String address;
     String user_name;
+    ChatRecord cr;
+
+    FileOutputStream fs;
+    ObjectOutputStream os = null;
 
     public SimpleChatClient() {
         try {
@@ -41,6 +51,31 @@ public class SimpleChatClient {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
+
+        SimpleDateFormat rq = new SimpleDateFormat("yyyy-MM-dd");
+        String fileName = rq.format(new Date()) + ".ser";
+        File file = new File(fileName);
+
+        if (!file.exists()) {
+            try {
+                file.createNewFile();
+            } catch (IOException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+        }
+        try {
+            fs = new FileOutputStream(rq.format(new Date()) + ".ser");
+            os = new ObjectOutputStream(fs);
+        } catch (FileNotFoundException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+
+
     }
 
     public static void main(String args[]) {
@@ -90,7 +125,12 @@ public class SimpleChatClient {
                         // TODO Auto-generated catch block
                         e1.printStackTrace();
                     }
-
+                    try {
+                        os.close();
+                    } catch (IOException e1) {
+                        // TODO Auto-generated catch block
+                        e1.printStackTrace();
+                    }
                     System.exit(0);
                 }
             }
@@ -121,10 +161,11 @@ public class SimpleChatClient {
         public void actionPerformed(ActionEvent arg0) {
             // TODO Auto-generated method stubadasd
             try {
-                if ((outgoing.getText() != "") && (outgoing.getText() != null))
+                if ((!outgoing.getText().equals("")) &&(outgoing.getText() != null)) {
                     writer.println(address + ":");
-                writer.println("     " + outgoing.getText());
-                writer.flush();
+                    writer.println("     " + outgoing.getText());
+                    writer.flush();
+                }
             } catch (Exception e) {
                 e.printStackTrace();
 
@@ -132,7 +173,8 @@ public class SimpleChatClient {
             try {
                 socket.sendUrgentData(0xFF);
             } catch (Exception ex) {
-                incoming.append("the sever maybe occured some problems");  //click the send can make this warning
+                incoming.append("the sever maybe occured some problems"); // click the send can make
+                                                                          // this warning
             }
             outgoing.setText("");
             outgoing.requestFocus();
@@ -143,15 +185,26 @@ public class SimpleChatClient {
     public class IncomingReader implements Runnable {
         public void run() {
             String message;
+            SimpleDateFormat tm = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            String timeString = null;
             try {
                 while ((message = reader.readLine()) != null) {
                     incoming.append(message + "\n");
+                    timeString = tm.format(new Date());
+                    cr = new ChatRecord();
+                    cr.setUser_name(user_name);
+                    cr.setRecord(message);
+                    cr.setTime(timeString);
+                    os.writeObject(cr);
                 }
             } catch (Exception e) {
                 // TODO: handle exception
 
                 // e.printStackTrace();
             }
+
+
+
         }
     }
 
